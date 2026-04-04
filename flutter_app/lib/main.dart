@@ -4,11 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'firebase_options.dart';
 
-// We will uncomment these as we move the bottom classes into separate files.
-// import 'package:flutter_app/screens/analyze_screen.dart';
-// import 'package:flutter_app/screens/lineage_screen.dart';
-// import 'package:flutter_app/screens/report_screen.dart';
-// import 'package:flutter_app/screens/map_screen.dart';
+import 'package:flutter_app/screens/analyze_screen.dart';
+import 'package:flutter_app/screens/lineage_screen.dart';
+import 'package:flutter_app/screens/report_screen.dart';
+import 'package:flutter_app/screens/map_screen.dart';
+import 'package:flutter_app/services/auth_service.dart';
+import 'package:flutter_app/models/url_analysis.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,17 +95,7 @@ class LoginScreen extends StatelessWidget {
 
   Future<void> _signInWithGoogle(BuildContext context) async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      await AuthService.signInWithGoogle();
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,11 +188,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    AnalyzeScreen(),
-    LineageScreen(),
-    ReportScreen(),
-    MapScreen(),
+  final List<Widget> _screens = [
+    const AnalyzeScreen(),
+    const LineageScreen(),
+    ReportScreen(
+      analysis: UrlAnalysis(
+        id: 'mock-id',
+        rawUrl: 'https://example.com',
+        genomeString: 'ABC',
+        familyName: 'Unknown',
+        similarityScore: 0.0,
+        mutations: [],
+        riskLevel: 'SAFE',
+        analyzedAt: DateTime.now(),
+        geminiReport: 'No analysis yet.',
+      ),
+    ),
+    const MapScreen(),
   ];
 
   @override
@@ -249,102 +252,6 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.map),
             label: 'Map',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AnalyzeScreen extends StatelessWidget {
-  const AnalyzeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search, size: 64, color: Colors.amber),
-          Text(
-            'Analyze URLs',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Paste a suspicious URL to analyze',
-            style: TextStyle(color: Colors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class LineageScreen extends StatelessWidget {
-  const LineageScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.account_tree, size: 64, color: Colors.deepPurple),
-          Text(
-            'Campaign Lineage',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'View phishing family evolution trees',
-            style: TextStyle(color: Colors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ReportScreen extends StatelessWidget {
-  const ReportScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.article, size: 64, color: Colors.teal),
-          Text(
-            'Threat Reports',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Gemini-powered intelligence reports',
-            style: TextStyle(color: Colors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class MapScreen extends StatelessWidget {
-  const MapScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.map, size: 64, color: Colors.green),
-          Text(
-            'Global Map',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Phishing campaign origins worldwide',
-            style: TextStyle(color: Colors.white70),
           ),
         ],
       ),
