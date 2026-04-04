@@ -1,4 +1,4 @@
-class Prediction {
+﻿class Prediction {
   final String id;
   final String familyName;
   final String predictedGenome;
@@ -6,7 +6,7 @@ class Prediction {
   final double confidenceScore;
   final DateTime createdAt;
 
-  Prediction({
+  const Prediction({
     required this.id,
     required this.familyName,
     required this.predictedGenome,
@@ -17,13 +17,13 @@ class Prediction {
 
   factory Prediction.fromJson(Map<String, dynamic> json) {
     return Prediction(
-      id: json['id'] ?? '',
-      familyName: json['familyName'] ?? '',
-      predictedGenome: json['predictedGenome'] ?? '',
-      predictedUrlPattern: json['predictedUrlPattern'] ?? '',
-      confidenceScore: (json['confidenceScore'] ?? 0.0).toDouble(),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+      id: json['id'] as String? ?? '',
+      familyName: json['family_name'] as String? ?? 'Unknown',
+      predictedGenome: json['predicted_genome'] as String? ?? '',
+      predictedUrlPattern: json['predicted_url_pattern'] as String? ?? '',
+      confidenceScore: (json['confidence_score'] as num?)?.toDouble() ?? 0.0,
+      createdAt: json['created_at'] != null 
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
           : DateTime.now(),
     );
   }
@@ -31,11 +31,11 @@ class Prediction {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'familyName': familyName,
-      'predictedGenome': predictedGenome,
-      'predictedUrlPattern': predictedUrlPattern,
-      'confidenceScore': confidenceScore,
-      'createdAt': createdAt.toIso8601String(),
+      'family_name': familyName,
+      'predicted_genome': predictedGenome,
+      'predicted_url_pattern': predictedUrlPattern,
+      'confidence_score': confidenceScore,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 }

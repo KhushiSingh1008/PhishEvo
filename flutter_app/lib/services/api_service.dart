@@ -1,68 +1,74 @@
-import 'dart:convert';
+﻿import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
+
 import '../models/url_analysis.dart';
 import '../models/campaign_family.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://phishevo-backend-xxxx-uc.a.run.app';
+  static const String baseUrl = 'http://10.0.2.2:8000';
 
-  Future<UrlAnalysis?> analyzeUrl(String url) async {
+  static Future<UrlAnalysis> analyzeUrl(String url) async {
     try {
-      final response = await http.post(
-        Uri.parse('\$baseUrl/analyze'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'url': url}),
-      );
+      final response = await http
+          .post(
+            Uri.parse("$baseUrl/analyze"),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'url': url}),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         return UrlAnalysis.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception('Failed to analyze URL');
+        throw Exception(
+            'Error: HTTP ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      print('API Error: \$e');
-      return null;
+      throw Exception('Failed to connect to API: $e');
     }
   }
 
-  Future<List<CampaignFamily>> getFamilies() async {
+  static Future<List<CampaignFamily>> getFamilies() async {
     try {
-      final response = await http.get(Uri.parse('\$baseUrl/families'));
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        return data.map((e) => CampaignFamily.fromJson(e)).toList();
-      }
-      return [];
-    } catch (e) {
-      print('API Error: \$e');
-      return [];
-    }
-  }
+      final response = await http
+          .get(Uri.parse("$baseUrl/families"))
+          .timeout(const Duration(seconds: 15));
 
-  Future<List<UrlAnalysis>> getRecentAnalyses() async {
-    try {
-      final response = await http.get(Uri.parse('\$baseUrl/recent'));
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        return data.map((e) => UrlAnalysis.fromJson(e)).toList();
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => CampaignFamily.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
-      print('API Error: \$e');
       return [];
     }
   }
 
-  Future<List<Map<String, dynamic>>> getBlocklist() async {
+  static Future<List<UrlAnalysis>> getRecentAnalyses() async {
     try {
-      final response = await http.get(Uri.parse('\$baseUrl/blocklist'));
+      final response = await http
+          .get(Uri.parse("$baseUrl/analyses"))
+          .timeout(const Duration(seconds: 15));
+
       if (response.statusCode == 200) {
-        return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => UrlAnalysis.fromJson(json)).toList();
       }
       return [];
     } catch (e) {
-      print('API Error: \$e');
       return [];
+    }
+  }
+
+  static Future<bool> checkHealth() async {
+    try {
+      final response = await http
+          .get(Uri.parse("$baseUrl/health"))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }
