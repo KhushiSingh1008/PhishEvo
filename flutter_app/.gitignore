@@ -1,0 +1,28 @@
+﻿# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Firebase — NEVER commit these
+google-services.json
+GoogleService-Info.plist
+lib/firebase_options.dart
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env

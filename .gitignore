@@ -1,2 +1,9 @@
-
-backend/data/phishing_urls.txt
+﻿# covers both subdirectories
+**/__pycache__/
+**/*.pyc
+**/venv/
+**/build/
+**/.dart_tool/
+**/google-services.json
+**/firebase_options.dart
+**/.env

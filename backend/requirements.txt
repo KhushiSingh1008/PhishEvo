@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+biopython
+scikit-learn
+pandas
+numpy
+tldextract
+requests
+google-cloud-firestore
+google-cloud-aiplatform
+google-auth
