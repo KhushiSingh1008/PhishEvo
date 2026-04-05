@@ -1,11 +1,9 @@
 fastapi
 uvicorn
-biopython
-scikit-learn
-pandas
-numpy
+pydantic
 tldextract
 requests
+google-generativeai
+firebase-admin
 google-cloud-firestore
-google-cloud-aiplatform
-google-auth
+python-dotenv

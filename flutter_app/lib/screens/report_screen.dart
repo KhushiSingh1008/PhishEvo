@@ -1,24 +1,44 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/url_analysis.dart';
-import '../widgets/genome_display.dart';
-import '../widgets/similarity_bar.dart';
+import '../widgets/genome_chip.dart';
+import '../services/api_service.dart';
 
 class ReportScreen extends StatelessWidget {
   final UrlAnalysis analysis;
+
   const ReportScreen({super.key, required this.analysis});
 
   Color _getRiskColor() {
-    switch (analysis.riskLevel.toUpperCase()) {
-      case 'DANGEROUS': return Colors.red;
-      case 'SUSPICIOUS': return Colors.amber;
-      case 'SAFE': return Colors.green;
+    final level = analysis.report?.threatLevel.toUpperCase() ?? 'UNKNOWN';
+    switch (level) {
+      case 'HIGH': return Colors.red;
+      case 'MEDIUM': return Colors.orange;
+      case 'LOW': return Colors.green;
       default: return Colors.grey;
+    }
+  }
+
+  void _addToBlocklist(BuildContext context) async {
+    try {
+      await ApiService.addToBlocklist(analysis.url);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('URL added to blocklist successfully')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red.shade800),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final riskColor = _getRiskColor();
+    final report = analysis.report;
 
     return Scaffold(
       appBar: AppBar(
@@ -41,92 +61,157 @@ class ReportScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.shield, size: 40, color: riskColor),
                   const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(analysis.riskLevel, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: riskColor)),
-                      Text(analysis.familyName, style: const TextStyle(fontSize: 14, color: Colors.white54)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          report?.threatLevel ?? 'UNKNOWN', 
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: riskColor)
+                        ),
+                        Text(
+                          analysis.url, 
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14, color: Colors.white54)
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
+            
             const Text('Genome Sequence', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            GenomeDisplay(genome: analysis.genomeString),
+            GenomeRow(genome: analysis.genome),
+            
             const SizedBox(height: 20),
-            const Text('Family Match', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            
+            const Text('Campaign Match', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            SimilarityBar(score: analysis.similarityScore, familyName: analysis.familyName),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(analysis.campaignMatch, style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+                Text('\${(analysis.confidence * 100).toStringAsFixed(1)}%'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: analysis.confidence,
+              backgroundColor: Colors.white10,
+              color: Colors.deepPurple,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            
             const SizedBox(height: 20),
-            const Text('Mutations Detected', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            
+            if (report != null) ...[
+              const Text('Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(report.summary, style: const TextStyle(height: 1.5)),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              const Text('Indicators of Compromise', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              if (report.indicators.isEmpty)
+                const Text('No specific indicators extracted.', style: TextStyle(color: Colors.white54))
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: report.indicators.map((i) => Chip(
+                    label: Text(i, style: const TextStyle(fontSize: 12)),
+                    backgroundColor: Colors.white10,
+                  )).toList(),
+                ),
+              
+              const SizedBox(height: 20),
+              
+              const Text('Recommended Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              if (report.recommendedActions.isEmpty)
+                const Text('No specific recommendations.', style: TextStyle(color: Colors.white54))
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: report.recommendedActions.asMap().entries.map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.check_circle, size: 20, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text('\${entry.key + 1}. \${entry.value}')),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              
+              const SizedBox(height: 20),
+              
+              const Text('Campaign Context', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              Card(
+                color: Colors.deepPurple.withOpacity(0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(report.campaignContext, style: const TextStyle(height: 1.5)),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+            
+            const Text('Predicted Malicious Variants', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            if (analysis.mutations.isEmpty)
-              const Text('No mutations from reference genome', style: TextStyle(color: Colors.white54))
+            if (analysis.predictedVariants.isEmpty)
+              const Text('No variants predicted.', style: TextStyle(color: Colors.white54))
             else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: analysis.mutations.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (context, index) {
-                  final mutation = analysis.mutations[index];
-                  final type = mutation['mutation_type'] ?? '';
-                  IconData iconData = Icons.help_outline;
-                  Color iconColor = Colors.grey;
-
-                  if (type.toLowerCase().contains('substitution')) {
-                    iconData = Icons.swap_horiz;
-                    iconColor = Colors.orange;
-                  } else if (type.toLowerCase().contains('insertion')) {
-                    iconData = Icons.add_circle;
-                    iconColor = Colors.green;
-                  } else if (type.toLowerCase().contains('deletion')) {
-                    iconData = Icons.remove_circle;
-                    iconColor = Colors.red;
-                  }
-
-                  return ListTile(
-                    leading: Icon(iconData, color: iconColor),
-                    title: Text('Position ${mutation['position']}'),
-                    subtitle: Text('${mutation['original']} \u2192 ${mutation['mutated']}'),
-                    trailing: Chip(
-                      label: Text(type),
-                      backgroundColor: iconColor.withOpacity(0.15),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: analysis.predictedVariants.map((variant) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Genome: $variant', style: const TextStyle(fontFamily: 'monospace', color: Colors.deepPurple)),
+                        const SizedBox(height: 4),
+                        GenomeRow(genome: variant),
+                      ],
                     ),
                   );
-                },
+                }).toList(),
               ),
-            const SizedBox(height: 20),
-            const Text('Gemini Intelligence Report', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: analysis.geminiReport.isEmpty
-                    ? const Center(
-                        child: Column(
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 12),
-                            Text('Generating report...', style: TextStyle(color: Colors.white54)),
-                          ],
-                        ),
-                      )
-                    : SelectableText(
-                        analysis.geminiReport,
-                        style: const TextStyle(fontSize: 14, height: 1.6),
-                      ),
+              
+            const SizedBox(height: 32),
+            
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _addToBlocklist(context),
+                icon: const Icon(Icons.block),
+                label: const Text('Add to Blocklist'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade900,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text('Analyzed URL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            const SizedBox(height: 4),
-            SelectableText(
-              analysis.rawUrl,
-              style: const TextStyle(fontFamily: 'monospace', color: Colors.white54, fontSize: 12),
-            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

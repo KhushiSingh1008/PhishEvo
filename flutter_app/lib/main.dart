@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'firebase_options.dart';
+import 'package:flutter/services.dart';
 
 import 'package:flutter_app/screens/analyze_screen.dart';
 import 'package:flutter_app/screens/lineage_screen.dart';
@@ -13,9 +13,7 @@ import 'package:flutter_app/models/url_analysis.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp();
   runApp(const PhishEvoApp());
 }
 
@@ -193,15 +191,18 @@ class _HomeScreenState extends State<HomeScreen> {
     const LineageScreen(),
     ReportScreen(
       analysis: UrlAnalysis(
-        id: 'mock-id',
-        rawUrl: 'https://example.com',
-        genomeString: 'ABC',
-        familyName: 'Unknown',
-        similarityScore: 0.0,
-        mutations: [],
-        riskLevel: 'SAFE',
-        analyzedAt: DateTime.now(),
-        geminiReport: 'No analysis yet.',
+        url: 'https://example.com',
+        genome: 'ABC',
+        campaignMatch: 'Unknown',
+        confidence: 0.0,
+        predictedVariants: [],
+        report: ThreatReport(
+          threatLevel: 'SAFE',
+          summary: 'No analysis yet.',
+          indicators: [],
+          recommendedActions: [],
+          campaignContext: '',
+        ),
       ),
     ),
     const MapScreen(),

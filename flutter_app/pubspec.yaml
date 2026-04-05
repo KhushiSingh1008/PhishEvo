@@ -20,9 +20,8 @@ dependencies:
   google_sign_in: ^6.2.1
   google_maps_flutter: ^2.9.0
 
-  # Networking + State management
+  # Networking
   http: ^1.2.2
-  provider: ^6.1.2
 
   # UI + Charts + Animation
   fl_chart: ^0.69.0

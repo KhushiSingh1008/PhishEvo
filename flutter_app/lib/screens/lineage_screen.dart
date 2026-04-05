@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../models/campaign_family.dart';
-import '../widgets/genome_display.dart';
+import '../models/url_analysis.dart';
+import '../widgets/genome_chip.dart';
+import 'report_screen.dart';
 
 class LineageScreen extends StatefulWidget {
   const LineageScreen({super.key});
@@ -11,196 +12,208 @@ class LineageScreen extends StatefulWidget {
 }
 
 class _LineageScreenState extends State<LineageScreen> {
-  List<CampaignFamily> _families = [];
+  List<Map<String, dynamic>> _families = [];
+  List<UrlAnalysis> _analyses = [];
   bool _isLoading = true;
-  int _selectedIndex = 0;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadFamilies();
+    _fetchData();
   }
 
-  Future<void> _loadFamilies() async {
-    setState(() => _isLoading = true);
-    final families = await ApiService.getFamilies();
+  Future<void> _fetchData() async {
     setState(() {
-      _families = families;
-      _isLoading = false;
+      _isLoading = true;
+      _error = null;
     });
-  }
 
-  Widget _statBox(String label, String value) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white10,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepPurple)),
-            Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-          ],
-        ),
-      ),
-    );
-  }
+    try {
+      final futures = await Future.wait([
+        ApiService.getFamilies(),
+        ApiService.getAnalyses(),
+      ]);
 
-  Widget _buildEvolutionTimeline(int familyIndex) {
-    // Hardcodec 4-step timeline showing mock evolution
-    final mocks = [
-      {"gen": "1", "genome": "BCSMX", "desc": "Original campaign"},
-      {"gen": "2", "genome": "BNTMX", "desc": "TLD mutation detected"},
-      {"gen": "3", "genome": "BNTMQ", "desc": "Added query params"},
-      {"gen": "4", "genome": "BNTDQ", "desc": "Deeper path structure"},
-    ];
-
-    return Column(
-      children: mocks.map((mock) {
-        final isLast = mocks.last == mock;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: const BoxDecoration(color: Colors.deepPurple, shape: BoxShape.circle),
-                  child: Center(child: Text(mock["gen"]!, style: const TextStyle(fontWeight: FontWeight.bold))),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Generation ${mock["gen"]}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text(mock["genome"]!, style: const TextStyle(fontFamily: 'monospace', color: Colors.deepPurple, fontSize: 13)),
-                      Text(mock["desc"]!, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (!isLast)
-              Container(
-                height: 30,
-                width: 2,
-                color: Colors.deepPurple,
-                margin: const EdgeInsets.only(left: 14),
-              ),
-          ],
-        );
-      }).toList(),
-    );
+      if (mounted) {
+        setState(() {
+          _families = futures[0] as List<Map<String, dynamic>>;
+          _analyses = futures[1] as List<UrlAnalysis>;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(
+        title: const Text('Campaign Lineage'),
+        backgroundColor: Colors.transparent,
+      ),
+      body: RefreshIndicator(
+        onRefresh: _fetchData,
+        child: _buildContent(),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return ListView(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Campaign Lineage', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    const Text('Known phishing family evolution trees', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
-                    if (_isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else if (_families.isEmpty)
-                      const Center(child: Text('No families loaded. Is backend running?', style: TextStyle(color: Colors.white54)))
-                    else ...[
-                      SizedBox(
-                        height: 44,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _families.length,
-                          itemBuilder: (context, index) {
-                            final family = _families[index];
-                            final isSelected = index == _selectedIndex;
-                            return GestureDetector(
-                              onTap: () => setState(() => _selectedIndex = index),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 6),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.deepPurple : Colors.white10,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    family.familyName,
-                                    style: TextStyle(color: isSelected ? Colors.white : Colors.white54, fontSize: 13),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      if (_families.isNotEmpty) ...[
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: Colors.deepPurple,
-                                      child: Text(_families[_selectedIndex].familyName.isNotEmpty ? _families[_selectedIndex].familyName[0] : '?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(_families[_selectedIndex].familyName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        Text(_families[_selectedIndex].description, style: const TextStyle(color: Colors.white54, fontSize: 13)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                const Text('Reference Genome', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                const SizedBox(height: 8),
-                                GenomeDisplay(genome: _families[_selectedIndex].referenceGenome),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    _statBox('Variants', _families[_selectedIndex].variantCount.toString()),
-                                    const SizedBox(width: 12),
-                                    _statBox('Risk Level', 'HIGH'),
-                                    const SizedBox(width: 12),
-                                    _statBox('Active', 'Yes'),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        const Text('Evolution Timeline', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 12),
-                        _buildEvolutionTimeline(_selectedIndex),
-                      ],
-                    ],
+                    Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _fetchData,
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
+        ],
+      );
+    }
+
+    if (_families.isEmpty && _analyses.isEmpty) {
+      return ListView(
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: const Center(
+              child: Text(
+                'No campaigns or analyses yet.\n\nStart analyzing URLs to build biological models.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        const Text('Campaign Families', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 180,
+          child: _families.isEmpty
+              ? const Center(child: Text('No families found', style: TextStyle(color: Colors.white54)))
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _families.length,
+                  itemBuilder: (context, index) {
+                    final family = _families[index];
+                    return Container(
+                      width: 250,
+                      margin: const EdgeInsets.only(right: 16),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(family['family_name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 12),
+                              const Text('Reference Type:', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                              const SizedBox(height: 4),
+                              GenomeRow(genome: family['reference_genome'] ?? ''),
+                              const Spacer(),
+                              Text((family['description'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ),
-      ),
+        const SizedBox(height: 32),
+        const Text('Recent Analyses', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        if (_analyses.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(32.0),
+            child: Center(child: Text('No recent analyses.', style: TextStyle(color: Colors.white54))),
+          )
+        else
+          ..._analyses.map((analysis) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ReportScreen(analysis: analysis)),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              analysis.url,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.deepPurple.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '\${(analysis.confidence * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(analysis.campaignMatch, style: const TextStyle(color: Colors.white54, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      GenomeRow(genome: analysis.genome),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+      ],
     );
   }
 }

@@ -1,11 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 import '../models/url_analysis.dart';
-import '../widgets/genome_display.dart';
-import '../widgets/similarity_bar.dart';
-import '../widgets/threat_card.dart';
+import '../widgets/genome_chip.dart';
 import 'report_screen.dart';
+import 'lineage_screen.dart';
 
 class AnalyzeScreen extends StatefulWidget {
   const AnalyzeScreen({super.key});
@@ -18,7 +17,6 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   final TextEditingController _urlController = TextEditingController();
   bool _isLoading = false;
   UrlAnalysis? _result;
-  String? _error;
 
   @override
   void dispose() {
@@ -27,35 +25,46 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   }
 
   Future<void> _analyzeUrl() async {
-    if (_urlController.text.trim().isEmpty) {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a URL')),
+        const SnackBar(content: Text('Please enter a valid URL to scan')),
       );
       return;
     }
+
     setState(() {
       _isLoading = true;
-      _error = null;
       _result = null;
     });
+
     try {
-      final result = await ApiService.analyzeUrl(_urlController.text.trim());
-      setState(() {
-        _result = result;
-        _isLoading = false;
-      });
+      final analysis = await ApiService.analyzeUrl(url);
+      if (mounted) {
+        setState(() {
+          _result = analysis;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red.shade800,
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _pasteFromClipboard() async {
-    ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null) {
-      _urlController.text = data!.text!;
+  Color _getBadgeColor(String level) {
+    switch (level.toUpperCase()) {
+      case 'HIGH': return Colors.red;
+      case 'MEDIUM': return Colors.orange;
+      case 'LOW': return Colors.green;
+      default: return Colors.grey;
     }
   }
 
@@ -83,7 +92,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                         maxLines: 2,
                         style: const TextStyle(fontFamily: 'monospace'),
                         decoration: InputDecoration(
-                          hintText: 'https://suspicious-url.xyz/login',
+                          hintText: 'Enter suspicious URL...',
                           prefixIcon: const Icon(Icons.link, color: Colors.deepPurple),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           filled: true,
@@ -98,7 +107,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                               icon: _isLoading 
                                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
                                 : const Icon(Icons.biotech),
-                              label: Text(_isLoading ? 'Analyzing...' : 'Analyze Genome'),
+                              label: Text(_isLoading ? 'Scanning...' : 'Scan URL'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.deepPurple,
                                 minimumSize: const Size.fromHeight(48),
@@ -110,7 +119,10 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                           IconButton(
                             icon: const Icon(Icons.paste),
                             tooltip: 'Paste from clipboard',
-                            onPressed: _pasteFromClipboard,
+                            onPressed: () async {
+                              ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+                              if (data?.text != null) _urlController.text = data!.text!;
+                            },
                           ),
                         ],
                       ),
@@ -118,37 +130,92 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                   ),
                 ),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(_error!, style: const TextStyle(color: Colors.red))),
-                    ],
-                  ),
-                ),
-              ],
               if (_result != null) ...[
                 const SizedBox(height: 24),
                 const Text('Analysis Result', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                ThreatCard(analysis: _result!),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.article),
-                    label: const Text('View Full Gemini Report'),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ReportScreen(analysis: _result!)),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Mapped Genome', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getBadgeColor(_result!.report?.threatLevel ?? 'UNKNOWN').withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _getBadgeColor(_result!.report?.threatLevel ?? 'UNKNOWN')),
+                              ),
+                              child: Text(
+                                _result!.report?.threatLevel ?? 'UNKNOWN',
+                                style: TextStyle(
+                                  color: _getBadgeColor(_result!.report?.threatLevel ?? 'UNKNOWN'),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        GenomeRow(genome: _result!.genome),
+                        const SizedBox(height: 24),
+                        const Text('Campaign Match', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(child: Text(_result!.campaignMatch, style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold))),
+                            Text('\${(_result!.confidence * 100).toStringAsFixed(1)}%'),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: _result!.confidence,
+                          backgroundColor: Colors.white10,
+                          color: Colors.deepPurple,
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.article),
+                                label: const Text('View Full Report'),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => ReportScreen(analysis: _result!)),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton.icon(
+                                icon: const Icon(Icons.account_tree),
+                                label: const Text('View Lineage'),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const LineageScreen()),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
                     ),
                   ),
                 ),
