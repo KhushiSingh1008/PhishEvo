@@ -7,6 +7,7 @@ load_dotenv()
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from encoder import encode_url
@@ -35,21 +36,41 @@ def startup_event():
         print("Database is empty. Seeding reference campaigns...")
         db.save_family({
             "family_name": "PayPal-Impersonation", 
-            "reference_genome": "BNTHQ",
+            "reference_genome": "BNTMQ",
             "description": "Standard PayPal login credential harvester"
         })
         db.save_family({
-            "family_name": "Google-Phish", 
-            "reference_genome": "BSMQ",
-            "description": "Google phishing site mock dataset"
+            "family_name": "Amazon-Scam", 
+            "reference_genome": "BSTDQ",
+            "description": "Amazon phishing site mock dataset"
         })
         db.save_family({
-            "family_name": "Generic-Credential-Harvest", 
-            "reference_genome": "TMQH",
-            "description": "Generic credential harvester campaign"
+            "family_name": "Banking-Fraud", 
+            "reference_genome": "BBTMX",
+            "description": "Banking fraud variant"
+        })
+        db.save_family({
+            "family_name": "Crypto-Theft", 
+            "reference_genome": "HNTDQ",
+            "description": "Crypto wallet drainer"
+        })
+        db.save_family({
+            "family_name": "Netflix-Phish", 
+            "reference_genome": "BNSMX",
+            "description": "Netflix subscription renew scam"
         })
     else:
         print(f"Found {len(families)} campaigns connected to db.")
+
+def calculate_risk_level(similarity: float) -> str:
+    if similarity >= 0.70:
+        return "HIGH"
+    elif similarity >= 0.40:
+        return "MEDIUM"
+    elif similarity >= 0.15:
+        return "LOW"
+    else:
+        return "SAFE"
 
 class AnalyzeRequest(BaseModel):
     url: str
@@ -108,6 +129,17 @@ def analyze_url(req: AnalyzeRequest):
     db.save_analysis(analysis_data)
     
     # 8. Return response directly to frontend (exact required JSON structural fit)
+    if isinstance(report, str):
+        report = {
+            "threat_level": calculate_risk_level(confidence),
+            "summary": report,
+            "indicators": [],
+            "recommended_actions": [],
+            "campaign_context": ""
+        }
+    else:
+        report["threat_level"] = report.get("threat_level") or calculate_risk_level(confidence)
+        
     return {
         "url": url,
         "genome": genome,
@@ -125,11 +157,29 @@ def get_families():
 def get_analyses():
     return db.get_all_analyses()
 
+@app.post("/blocklist")
+async def add_to_blocklist(request: dict):
+    try:
+        url = request.get("url", "") or request.get("pattern", "")
+        
+        # Add to database
+        db.add_to_blocklist(url)
+        
+        return {
+            "success": True,
+            "message": f"URL '{url}' added to blocklist",
+            "url": url
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/blocklist")
-def get_blocklist():
-    patterns = db.get_blocklist()
-    # Present as dicts if it is commonly expected by UI/Admin Panel
-    return [{"url_pattern": p} for p in patterns]
+async def get_blocklist():
+    try:
+        items = db.get_blocklist()
+        return {"blocklist": items, "count": len(items)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 def health_check():

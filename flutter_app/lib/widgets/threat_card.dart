@@ -4,8 +4,8 @@ import '../models/url_analysis.dart';
 class ThreatCard extends StatelessWidget {
   final UrlAnalysis analysis;
   const ThreatCard({super.key, required this.analysis});
-  
-  @override 
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -19,17 +19,24 @@ class ThreatCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Family Name', style: TextStyle(color: Colors.white54, fontSize: 12)),
-              Text(analysis.familyName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('Family Name',
+                  style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text(analysis.campaignMatch,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.2),
+              color: Colors.red.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(analysis.riskLevel, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+            child: Text(analysis.report?.threatLevel ?? 'UNKNOWN',
+                style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12)),
           ),
         ],
       ),

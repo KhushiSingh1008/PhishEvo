@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class SimilarityBar extends StatelessWidget {
   final double score;
@@ -14,7 +14,7 @@ class SimilarityBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(familyName, style: const TextStyle(color: Colors.white70)),
-            Text('%', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const Text('%', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 8),

@@ -82,9 +82,12 @@ class _LineageScreenState extends State<LineageScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const Icon(Icons.error_outline,
+                        size: 64, color: Colors.red),
                     const SizedBox(height: 16),
-                    Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    Text(_error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _fetchData,
@@ -119,19 +122,22 @@ class _LineageScreenState extends State<LineageScreen> {
     return ListView(
       padding: const EdgeInsets.all(16.0),
       children: [
-        const Text('Campaign Families', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text('Campaign Families',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         SizedBox(
-          height: 180,
+          height: 240,
           child: _families.isEmpty
-              ? const Center(child: Text('No families found', style: TextStyle(color: Colors.white54)))
+              ? const Center(
+                  child: Text('No families found',
+                      style: TextStyle(color: Colors.white54)))
               : ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: _families.length,
                   itemBuilder: (context, index) {
                     final family = _families[index];
                     return Container(
-                      width: 250,
+                      width: 280,
                       margin: const EdgeInsets.only(right: 16),
                       child: Card(
                         child: Padding(
@@ -139,13 +145,27 @@ class _LineageScreenState extends State<LineageScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(family['family_name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              Text(family['family_name'] ?? 'Unknown',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
                               const SizedBox(height: 12),
-                              const Text('Reference Type:', style: TextStyle(fontSize: 12, color: Colors.white54)),
-                              const SizedBox(height: 4),
-                              GenomeRow(genome: family['reference_genome'] ?? ''),
-                              const Spacer(),
-                              Text((family['description'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                              const Text('Reference Type:',
+                                  style: TextStyle(
+                                      fontSize: 12, color: Colors.white54)),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: GenomeRow(
+                                      genome: family['reference_genome'] ?? ''),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text((family['description'] ?? '').toString(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.white54)),
                             ],
                           ),
                         ),
@@ -155,12 +175,15 @@ class _LineageScreenState extends State<LineageScreen> {
                 ),
         ),
         const SizedBox(height: 32),
-        const Text('Recent Analyses', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text('Recent Analyses',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         if (_analyses.isEmpty)
           const Padding(
             padding: EdgeInsets.all(32.0),
-            child: Center(child: Text('No recent analyses.', style: TextStyle(color: Colors.white54))),
+            child: Center(
+                child: Text('No recent analyses.',
+                    style: TextStyle(color: Colors.white54))),
           )
         else
           ..._analyses.map((analysis) {
@@ -171,7 +194,8 @@ class _LineageScreenState extends State<LineageScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => ReportScreen(analysis: analysis)),
+                    MaterialPageRoute(
+                        builder: (_) => ReportScreen(analysis: analysis)),
                   );
                 },
                 child: Padding(
@@ -187,24 +211,45 @@ class _LineageScreenState extends State<LineageScreen> {
                               analysis.url,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace'),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.deepPurple.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '\${(analysis.confidence * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold, fontSize: 12),
+                              '${(analysis.confidence * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                  color: Colors.deepPurple,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(analysis.campaignMatch, style: const TextStyle(color: Colors.white54, fontSize: 14)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              analysis.campaignMatch,
+                              style: const TextStyle(
+                                color: Colors.deepPurple,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       GenomeRow(genome: analysis.genome),
                     ],
@@ -212,7 +257,7 @@ class _LineageScreenState extends State<LineageScreen> {
                 ),
               ),
             );
-          }).toList(),
+          }),
       ],
     );
   }

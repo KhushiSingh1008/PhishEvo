@@ -14,6 +14,28 @@ MISMATCH_SCORE = -1
 GAP_PENALTY = -1
 
 
+def calculate_similarity(score: float, seq1: str, seq2: str) -> float:
+    # Use length of shorter sequence for normalization
+    min_len = min(len(seq1), len(seq2))
+    max_len = max(len(seq1), len(seq2))
+    
+    # Max possible score = match score * shorter length
+    max_possible = min_len * MATCH_SCORE
+    
+    if max_possible == 0:
+        return 0.0
+    
+    # Base similarity from alignment
+    base_similarity = min(score / max_possible, 1.0)
+    
+    # Bonus for length similarity (penalize very different lengths)
+    length_ratio = min_len / max_len
+    
+    # Weighted final score (scaled to 0.0 - 1.0 to match original output range)
+    final = (base_similarity * 0.8) + (length_ratio * 0.2)
+    
+    return round(min(final, 1.0), 4)
+
 def smith_waterman(seq1: str, seq2: str) -> float:
     """
     Perform Smith-Waterman local sequence alignment between two genome strings.
@@ -53,15 +75,7 @@ def smith_waterman(seq1: str, seq2: str) -> float:
             if H[i][j] > max_score:
                 max_score = H[i][j]
 
-    # Theoretical best: the shorter sequence fully matches
-    # (every character is a match → shorter_len * MATCH_SCORE)
-    theoretical_max = min(m, n) * MATCH_SCORE
-
-    if theoretical_max == 0:
-        return 0.0
-
-    normalized = max_score / theoretical_max
-    return round(min(normalized, 1.0), 4)
+    return calculate_similarity(max_score, seq1, seq2)
 
 
 def align_to_campaigns(genome: str, campaigns: list) -> dict:

@@ -15,7 +15,8 @@ class AuthService {
         return null; // The user canceled the sign-in
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -49,7 +50,7 @@ class AuthService {
       case 'invalid-credential':
         return 'Invalid credentials provided.';
       default:
-        return 'Authentication failed: \${e.message ?? e.code}';
+        return 'Authentication failed: ${e.message ?? e.code}';
     }
   }
 }

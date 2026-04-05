@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/services.dart';
 
 import 'package:flutter_app/screens/analyze_screen.dart';
 import 'package:flutter_app/screens/lineage_screen.dart';
@@ -186,25 +185,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  late final List<Widget> _screens = [
     const AnalyzeScreen(),
     const LineageScreen(),
-    ReportScreen(
-      analysis: UrlAnalysis(
-        url: 'https://example.com',
-        genome: 'ABC',
-        campaignMatch: 'Unknown',
-        confidence: 0.0,
-        predictedVariants: [],
-        report: ThreatReport(
-          threatLevel: 'SAFE',
-          summary: 'No analysis yet.',
-          indicators: [],
-          recommendedActions: [],
-          campaignContext: '',
-        ),
-      ),
-    ),
+    ReportsListScreen(
+        onAnalyzeSelected: () => setState(() => _currentIndex = 0)),
     const MapScreen(),
   ];
 

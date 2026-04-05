@@ -61,10 +61,14 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
 
   Color _getBadgeColor(String level) {
     switch (level.toUpperCase()) {
-      case 'HIGH': return Colors.red;
-      case 'MEDIUM': return Colors.orange;
-      case 'LOW': return Colors.green;
-      default: return Colors.grey;
+      case 'HIGH':
+        return Colors.red;
+      case 'MEDIUM':
+        return Colors.orange;
+      case 'LOW':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -79,8 +83,10 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              const Text('URL Genome Analyzer', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const Text('Paste any URL to detect phishing campaign family', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const Text('URL Genome Analyzer',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text('Paste any URL to detect phishing campaign family',
+                  style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 24),
               Card(
                 child: Padding(
@@ -93,8 +99,10 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                         style: const TextStyle(fontFamily: 'monospace'),
                         decoration: InputDecoration(
                           hintText: 'Enter suspicious URL...',
-                          prefixIcon: const Icon(Icons.link, color: Colors.deepPurple),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          prefixIcon:
+                              const Icon(Icons.link, color: Colors.deepPurple),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
                           filled: true,
                         ),
                       ),
@@ -104,14 +112,20 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _isLoading ? null : _analyzeUrl,
-                              icon: _isLoading 
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                                : const Icon(Icons.biotech),
-                              label: Text(_isLoading ? 'Scanning...' : 'Scan URL'),
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 2))
+                                  : const Icon(Icons.biotech),
+                              label:
+                                  Text(_isLoading ? 'Scanning...' : 'Scan URL'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.deepPurple,
                                 minimumSize: const Size.fromHeight(48),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
                           ),
@@ -120,8 +134,10 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                             icon: const Icon(Icons.paste),
                             tooltip: 'Paste from clipboard',
                             onPressed: () async {
-                              ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-                              if (data?.text != null) _urlController.text = data!.text!;
+                              ClipboardData? data =
+                                  await Clipboard.getData(Clipboard.kTextPlain);
+                              if (data?.text != null)
+                                _urlController.text = data!.text!;
                             },
                           ),
                         ],
@@ -132,7 +148,9 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
               ),
               if (_result != null) ...[
                 const SizedBox(height: 24),
-                const Text('Analysis Result', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Analysis Result',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
@@ -143,18 +161,29 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Mapped Genome', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const Text('Mapped Genome',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _getBadgeColor(_result!.report?.threatLevel ?? 'UNKNOWN').withOpacity(0.2),
+                                color: _getBadgeColor(
+                                        _result!.report?.threatLevel ??
+                                            'UNKNOWN')
+                                    .withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: _getBadgeColor(_result!.report?.threatLevel ?? 'UNKNOWN')),
+                                border: Border.all(
+                                    color: _getBadgeColor(
+                                        _result!.report?.threatLevel ??
+                                            'UNKNOWN')),
                               ),
                               child: Text(
                                 _result!.report?.threatLevel ?? 'UNKNOWN',
                                 style: TextStyle(
-                                  color: _getBadgeColor(_result!.report?.threatLevel ?? 'UNKNOWN'),
+                                  color: _getBadgeColor(
+                                      _result!.report?.threatLevel ??
+                                          'UNKNOWN'),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -165,12 +194,29 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                         const SizedBox(height: 12),
                         GenomeRow(genome: _result!.genome),
                         const SizedBox(height: 24),
-                        const Text('Campaign Match', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text('Campaign Match',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Expanded(child: Text(_result!.campaignMatch, style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold))),
-                            Text('\${(_result!.confidence * 100).toStringAsFixed(1)}%'),
+                            Expanded(
+                              child: Text(
+                                _result!.campaignMatch,
+                                style: const TextStyle(
+                                  color: Colors.deepPurple,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${(_result!.confidence * 100).toStringAsFixed(1)}%',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 13),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -191,7 +237,9 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                                 onPressed: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => ReportScreen(analysis: _result!)),
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            ReportScreen(analysis: _result!)),
                                   );
                                 },
                               ),
@@ -208,7 +256,8 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                                 onPressed: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const LineageScreen()),
+                                    MaterialPageRoute(
+                                        builder: (_) => const LineageScreen()),
                                   );
                                 },
                               ),
@@ -225,12 +274,14 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                 const Center(
                   child: Column(
                     children: [
-                      Icon(Icons.biotech_outlined, size: 64, color: Colors.white54),
+                      Icon(Icons.biotech_outlined,
+                          size: 64, color: Colors.white54),
                       SizedBox(height: 16),
-                      Text('Enter a URL above to begin analysis', style: TextStyle(color: Colors.white54)),
+                      Text('Enter a URL above to begin analysis',
+                          style: TextStyle(color: Colors.white54)),
                       SizedBox(height: 8),
                       Text(
-                        'The genome encoder will map the URL structure\nto a comparable DNA-like sequence', 
+                        'The genome encoder will map the URL structure\nto a comparable DNA-like sequence',
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
